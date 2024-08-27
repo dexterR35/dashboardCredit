@@ -32,11 +32,9 @@ export const checkAuthStatus = () => {
 
 export const Login = async () => {
     const provider = new GoogleAuthProvider();
-  
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
-  
       toast.success("Login successful!");
       return user;
     } catch (error) {
