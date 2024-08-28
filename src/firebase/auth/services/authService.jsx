@@ -40,18 +40,20 @@ export const signInWithEmail = async (email, password) => {
   }
 };
 
-export const logout = async (navigate) => {
+export const logout = async () => {
   try {
     await signOut(auth);
-    sessionStorage.setItem("manualLogout", "true"); // Set the manualLogout flag
-    sessionStorage.removeItem("authUser");
+    sessionStorage.clear(); // Clear all session storage
+    localStorage.clear();   // Clear local storage (if necessary)
     toast.success("Successfully logged out.");
-    navigate("/admin/login"); // Redirect to the login page
+    return true; // Indicate that logout was successful
   } catch (error) {
     console.error("Error during logout:", error.message);
     toast.error(`Logout error: ${error.message}`);
+    return false; // Indicate that logout failed
   }
 };
+
 // Error Handling
 const handleAuthError = (error) => {
   switch (error.code) {

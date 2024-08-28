@@ -48,7 +48,7 @@ const LoginPage = () => {
         >
           Sign in
         </button>
-        <p className='pt-4 text-gray-400 leading-4 text-[12px] lowercase'>@YourApp 2024</p>
+        <p className='pt-4 text-gray-400 leading-4 text-[12px] lowercase'>@ObtineCredit 2024</p>
       </div>
     </div>
   );

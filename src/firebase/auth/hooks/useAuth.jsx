@@ -34,6 +34,7 @@ export const useAuth = () => {
 
               sessionStorage.setItem("authUser", JSON.stringify(userWithToken));
               setUser(userWithToken);
+              console.log(userWithToken,"fas")
             } else {
               console.error("No role found for this user.");
               sessionStorage.removeItem("authUser");
