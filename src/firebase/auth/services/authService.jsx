@@ -1,100 +1,57 @@
-import { useState, useEffect } from 'react';
-import {
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  onAuthStateChanged,
-  signOut
-} from 'firebase/auth';
+import { signInWithEmailAndPassword,signOut } from 'firebase/auth';
 import { toast } from 'react-toastify';
-import { auth } from "../../config";
+import { auth, dbFirestore } from '../../config';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 
-// Check Authentication Status
-export const checkAuthStatus = () => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const storedUser = sessionStorage.getItem("authUser");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-      setLoading(false);
-    } else {
-      const unsubscribe = onAuthStateChanged(auth, (authUser) => {
-        if (authUser) {
-          authUser.getIdToken().then(token => {
-            const userWithToken = {
-              uid: authUser.uid,
-              email: authUser.email,
-              token,
-            };
-            sessionStorage.setItem("authUser", JSON.stringify(userWithToken));
-            setUser(userWithToken);
-            setLoading(false);
-          });
-        } else {
-          setLoading(false);
-        }
-      });
-
-      return () => unsubscribe();
-    }
-  }, []);
-
-  return { user, loading };
-};
-
-// Sign In with Email and Password
 export const signInWithEmail = async (email, password) => {
   try {
+    // Sign in with Firebase
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
-    const token = await user.getIdToken();
+    const user = userCredential.user;  // Access the user object from userCredential
+    const token = await user.getIdToken(); // Fetch the ID token
+
+    // Query Firestore to find the user's role
+    const q = query(collection(dbFirestore, "c_roles"), where("uid", "==", user.uid));
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+      throw new Error("No role found for this user.");
+    }
+
+    const userDoc = querySnapshot.docs[0];
+    const role = userDoc.data().role;
+
+    // Constructing the user object with the role and token
     const userWithToken = {
       uid: user.uid,
       email: user.email,
       token,
+      role,
     };
+
+    // Storing the user in sessionStorage
     sessionStorage.setItem("authUser", JSON.stringify(userWithToken));
     toast.success("Login successful!");
-    return userWithToken;
+    return userWithToken; // Returning the complete user object
   } catch (error) {
     handleAuthError(error);
     throw new Error(`Authentication error: ${error.message}`);
   }
 };
 
-// Register with Email and Password
-export const registerWithEmail = async (email, password) => {
-  try {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
-    const token = await user.getIdToken();
-    const userWithToken = {
-      uid: user.uid,
-      email: user.email,
-      token,
-    };
-    sessionStorage.setItem("authUser", JSON.stringify(userWithToken));
-    toast.success("Registration successful!");
-    return userWithToken;
-  } catch (error) {
-    handleAuthError(error);
-    throw new Error(`Authentication error: ${error.message}`);
-  }
-};
-
-// Sign Out
-export const Logout = async () => {
+export const logout = async (navigate) => {
   try {
     await signOut(auth);
+    sessionStorage.setItem("manualLogout", "true"); // Set the manualLogout flag
     sessionStorage.removeItem("authUser");
-    toast.success("Logout successful!");
+    toast.success("Successfully logged out.");
+    navigate("/admin/login"); // Redirect to the login page
   } catch (error) {
+    console.error("Error during logout:", error.message);
     toast.error(`Logout error: ${error.message}`);
-    throw new Error(`Logout error: ${error.message}`);
   }
 };
-
 // Error Handling
 const handleAuthError = (error) => {
   switch (error.code) {
@@ -115,3 +72,4 @@ const handleAuthError = (error) => {
       break;
   }
 };
+

@@ -1,30 +1,26 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
+import { signInWithEmail } from '../../firebase/auth/services/authService';
 import { useAuth } from '../../firebase/auth/hooks/useAuth';
 
-const LoginPage = ({ setUser }) => {
+const LoginPage = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const { user, loading, signInWithEmailPassword } = useAuth(); // Check if this function is correctly imported
-  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const handleLogin = async () => {
     try {
-      const authUser = await signInWithEmailPassword(email, password);
-      setUser(authUser); // Set user state in App.jsx
-      navigate("/admin/home");
+      const authUser = await signInWithEmail(email, password); // authUser now contains the correct user object
+      sessionStorage.removeItem("manualLogout"); // Clear the manualLogout flag
+      navigate(authUser.role === 'admin' ? "/admin/home" : "/user/home");
     } catch (error) {
       console.error("Login error:", error.message);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="w-full h-screen flex items-center justify-center bg-gray-100">
-        <p>Loading...</p>
-      </div>
-    );
+  if (user) {
+    return <Navigate to={user.role === 'admin' ? '/admin/home' : '/user/home'} replace />;
   }
 
   return (
