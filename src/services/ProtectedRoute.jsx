@@ -9,12 +9,9 @@ const ProtectedRoute = ({ children, requiredRole }) => {
     return <div>Loading...</div>; // Show loading state while checking auth status
   }
 
-  if (!user) {
-    return <Navigate to="/admin/login" replace />;
-  }
 
-  if (requiredRole && user.role !== requiredRole) {
-    return <div>Access Denied</div>; // Show "Access Denied" message if the role does not match
+  if (!user || (requiredRole && user.role !== requiredRole)) {
+    return <Navigate to="/admin/login" replace />;
   }
 
   return children;
