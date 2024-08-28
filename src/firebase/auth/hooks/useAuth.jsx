@@ -9,7 +9,6 @@ export const useAuth = () => {
 
   useEffect(() => {
     const storedUser = sessionStorage.getItem("authUser");
-
     if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
       setUser(parsedUser);
@@ -20,21 +19,19 @@ export const useAuth = () => {
           try {
             const q = query(collection(dbFirestore, "c_roles"), where("uid", "==", authUser.uid));
             const querySnapshot = await getDocs(q);
-
             if (!querySnapshot.empty) {
               const userDoc = querySnapshot.docs[0];
               const role = userDoc.data().role;
-
+              console.log(role,"role");
               const userWithToken = {
                 uid: authUser.uid,
                 email: authUser.email,
                 token: await authUser.getIdToken(),
                 role,
               };
-
+              console.log(userWithToken,"userWithToken");
               sessionStorage.setItem("authUser", JSON.stringify(userWithToken));
               setUser(userWithToken);
-              console.log(userWithToken,"fas")
             } else {
               console.error("No role found for this user.");
               sessionStorage.removeItem("authUser");
@@ -51,10 +48,9 @@ export const useAuth = () => {
         }
         setLoading(false);
       });
-
       return () => unsubscribe();
     }
-  }, []); // Note the empty dependency array here
+  }, []);
 
   return { user, loading };
 };

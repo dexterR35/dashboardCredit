@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import LoginPage from './pages/Auth/LoginPage';
 import AdminHome from './pages/AdminHome';
 import UserHome from './pages/UserHome';
-import UserCreationPage from './components/UserCrationForm'; // Import the User Creation Page
+import UserCreationPage from './components/UserCrationForm'; 
 import { ToastContainer } from 'react-toastify';
 import { useAuth } from './firebase/auth/hooks/useAuth';
 import ProtectedRoute from './services/ProtectedRoute';
@@ -11,7 +11,6 @@ import 'react-toastify/dist/ReactToastify.css';
 const App = () => {
   const { user, loading } = useAuth();
 
-  // Function to determine where to redirect based on the user role
   const getHomeRoute = (role) => {
     return role === 'admin' ? '/admin/home' : '/user/home';
   };
@@ -26,7 +25,7 @@ const App = () => {
         <Route 
           path="/" 
           element={
-            user 
+            user && user.token 
               ? <Navigate to={getHomeRoute(user.role)} replace /> 
               : <Navigate to="/admin/login" replace />
           } 
@@ -34,7 +33,7 @@ const App = () => {
         <Route 
           path="/admin/login" 
           element={
-            user 
+            user && user.token 
               ? <Navigate to={getHomeRoute(user.role)} replace />
               : <LoginPage />
           } 
@@ -59,14 +58,14 @@ const App = () => {
           path="/admin/create-user" 
           element={
             <ProtectedRoute requiredRole="admin">
-              <UserCreationPage /> {/* Add the User Creation Page */}
+              <UserCreationPage />
             </ProtectedRoute>
           } 
         />
         <Route 
           path="*" 
           element={
-            <Navigate to={user ? getHomeRoute(user.role) : "/admin/login"} replace />
+            <Navigate to={user && user.token ? getHomeRoute(user.role) : "/admin/login"} replace />
           } 
         />
       </Routes>

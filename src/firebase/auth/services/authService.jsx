@@ -6,12 +6,10 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 
 export const signInWithEmail = async (email, password) => {
   try {
-    // Sign in with Firebase
+    
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;  // Access the user object from userCredential
-    const token = await user.getIdToken(); // Fetch the ID token
-
-    // Query Firestore to find the user's role
+    const user = userCredential.user;
+    const token = await user.getIdToken();
     const q = query(collection(dbFirestore, "c_roles"), where("uid", "==", user.uid));
     const querySnapshot = await getDocs(q);
 
@@ -21,8 +19,6 @@ export const signInWithEmail = async (email, password) => {
 
     const userDoc = querySnapshot.docs[0];
     const role = userDoc.data().role;
-
-    // Constructing the user object with the role and token
     const userWithToken = {
       uid: user.uid,
       email: user.email,
@@ -30,15 +26,15 @@ export const signInWithEmail = async (email, password) => {
       role,
     };
 
-    // Storing the user in sessionStorage
     sessionStorage.setItem("authUser", JSON.stringify(userWithToken));
     toast.success("Login successful!");
-    return userWithToken; // Returning the complete user object
+    return userWithToken;
   } catch (error) {
     handleAuthError(error);
     throw new Error(`Authentication error: ${error.message}`);
   }
 };
+
 
 export const logout = async () => {
   try {

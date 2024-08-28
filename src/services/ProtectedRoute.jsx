@@ -6,11 +6,14 @@ const ProtectedRoute = ({ children, requiredRole }) => {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return <div>Loading...</div>; // Show loading state while checking auth status
+    return <div>Loading...</div>;
   }
 
+  if (!user || !user.token) {
+    return <Navigate to="/admin/login" replace />;
+  }
 
-  if (!user || (requiredRole && user.role !== requiredRole)) {
+  if (requiredRole && user.role !== requiredRole) {
     return <Navigate to="/admin/login" replace />;
   }
 
