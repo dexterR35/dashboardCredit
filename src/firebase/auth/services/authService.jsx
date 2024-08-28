@@ -1,70 +1,117 @@
-
-import { useState, useEffect, useMemo } from 'react';
-import { getFirestore, collection, getDocs, query, orderBy, onSnapshot, setDoc, addDoc, doc, updateDoc, deleteDoc, where, serverTimestamp } from 'firebase/firestore';
+import { useState, useEffect } from 'react';
 import {
-  getAuth,
-  signOut,
-  signInWithPopup, GoogleAuthProvider,
+  signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   onAuthStateChanged,
-} from "firebase/auth";
-import { db } from '../../config'
-import { toast } from "react-toastify";
+  signOut
+} from 'firebase/auth';
+import { toast } from 'react-toastify';
+import { auth } from "../../config";
 
-const auth = getAuth();
-
+// Check Authentication Status
 export const checkAuthStatus = () => {
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
-  
-    useEffect(() => {
-      const unsubscribe = onAuthStateChanged(auth, (authUser) => {
-        setUser(authUser);
-        setLoading(false);
-      });
-  
-      return () => unsubscribe();
-    }, []);
-  
-    return { user, loading };
-  };
-  
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-export const Login = async () => {
-    const provider = new GoogleAuthProvider();
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      toast.success("Login successful!");
-      return user;
-    } catch (error) {
-      // Handle different types of Firebase authentication errors
-      switch (error.code) {
-        case "auth/account-exists-with-different-credential":
-          toast.error("An account already exists with a different credential.");
-          break;
-        case "auth/auth-domain-config-required":
-          toast.error("Auth domain configuration is required.");
-          break;
-        case "auth/cancelled-popup-request":
-          toast.error("Popup request was canceled. Please try again.");
-          break;
-        case "auth/operation-not-allowed":
-          toast.error("Operation not allowed. Please contact support.");
-          break;
-        case "auth/popup-blocked":
-          toast.error("Popup was blocked by the browser. Please enable popups and try again.");
-          break;
-        case "auth/popup-closed-by-user":
-          toast.error("Popup closed by user. Please try again.");
-          break;
-        case "auth/unauthorized-domain":
-          toast.error("This domain is not authorized. Please check your Firebase settings.");
-          break;
-        default:
-          toast.error(`Authentication error: ${error.message}`);
-          break;
-      }
-      throw new Error(`Authentication error: ${error.message}`);
+  useEffect(() => {
+    const storedUser = sessionStorage.getItem("authUser");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+      setLoading(false);
+    } else {
+      const unsubscribe = onAuthStateChanged(auth, (authUser) => {
+        if (authUser) {
+          authUser.getIdToken().then(token => {
+            const userWithToken = {
+              uid: authUser.uid,
+              email: authUser.email,
+              token,
+            };
+            sessionStorage.setItem("authUser", JSON.stringify(userWithToken));
+            setUser(userWithToken);
+            setLoading(false);
+          });
+        } else {
+          setLoading(false);
+        }
+      });
+
+      return () => unsubscribe();
     }
-  };
+  }, []);
+
+  return { user, loading };
+};
+
+// Sign In with Email and Password
+export const signInWithEmail = async (email, password) => {
+  try {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+    const token = await user.getIdToken();
+    const userWithToken = {
+      uid: user.uid,
+      email: user.email,
+      token,
+    };
+    sessionStorage.setItem("authUser", JSON.stringify(userWithToken));
+    toast.success("Login successful!");
+    return userWithToken;
+  } catch (error) {
+    handleAuthError(error);
+    throw new Error(`Authentication error: ${error.message}`);
+  }
+};
+
+// Register with Email and Password
+export const registerWithEmail = async (email, password) => {
+  try {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+    const token = await user.getIdToken();
+    const userWithToken = {
+      uid: user.uid,
+      email: user.email,
+      token,
+    };
+    sessionStorage.setItem("authUser", JSON.stringify(userWithToken));
+    toast.success("Registration successful!");
+    return userWithToken;
+  } catch (error) {
+    handleAuthError(error);
+    throw new Error(`Authentication error: ${error.message}`);
+  }
+};
+
+// Sign Out
+export const Logout = async () => {
+  try {
+    await signOut(auth);
+    sessionStorage.removeItem("authUser");
+    toast.success("Logout successful!");
+  } catch (error) {
+    toast.error(`Logout error: ${error.message}`);
+    throw new Error(`Logout error: ${error.message}`);
+  }
+};
+
+// Error Handling
+const handleAuthError = (error) => {
+  switch (error.code) {
+    case "auth/invalid-email":
+      toast.error("Invalid email address.");
+      break;
+    case "auth/user-disabled":
+      toast.error("User account has been disabled.");
+      break;
+    case "auth/user-not-found":
+      toast.error("User not found.");
+      break;
+    case "auth/wrong-password":
+      toast.error("Incorrect password.");
+      break;
+    default:
+      toast.error(`Authentication error: ${error.message}`);
+      break;
+  }
+};
